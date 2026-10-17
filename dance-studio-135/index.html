@@ -519,6 +519,28 @@ html[data-motion=on] [data-reveal=rot][data-in]{animation-name:rvUp}
 .sub-h .en{font-size:34px}
 }
 
+
+/* ---- 登場の動きを場所ごとに使い分け（同じ動きは2セクションまで。弾むのは見せ場だけ） ---- */
+:root{--out:cubic-bezier(.22,1,.36,1)}
+[data-motion=on] [data-reveal][data-fx][data-in]{animation-duration:.7s;animation-timing-function:var(--out);animation-fill-mode:both}
+[data-motion=on] [data-reveal][data-fx=fade][data-in]{animation-name:fxFade}
+[data-motion=on] [data-reveal][data-fx=rise][data-in]{animation-name:fxRise}
+[data-motion=on] [data-reveal][data-fx=side][data-in]{animation-name:fxSide}
+[data-motion=on] [data-reveal][data-fx=slide][data-in]{animation-name:fxSlide;animation-duration:.8s}
+[data-motion=on] [data-reveal][data-fx=wipe][data-in]{animation-name:fxWipe;animation-duration:.9s}
+[data-motion=on] [data-reveal][data-fx=mask][data-in]{animation-name:fxMask;animation-duration:.9s}
+[data-motion=on] [data-reveal][data-fx=blur][data-in]{animation-name:fxBlur;animation-duration:.9s}
+[data-motion=on] [data-reveal][data-fx=pop][data-in]{animation-name:fxPop}
+[data-motion=on] [data-reveal][data-fx=rotb][data-in]{animation-name:rvRot;animation-timing-function:var(--elastic);animation-duration:.9s}
+[data-motion=on] [data-reveal][data-fx=none]{opacity:1;animation:none}
+@keyframes fxFade{from{opacity:0}to{opacity:1}}
+@keyframes fxRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes fxSide{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+@keyframes fxSlide{from{opacity:0;transform:translateX(-60px)}to{opacity:1;transform:none}}
+@keyframes fxWipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+@keyframes fxMask{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0)}}
+@keyframes fxBlur{from{opacity:0;filter:blur(8px)}to{opacity:1;filter:none}}
+@keyframes fxPop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -1169,6 +1191,45 @@ html[data-motion=on] [data-reveal=rot][data-in]{animation-name:rvUp}
   if (form && sent) {
     form.addEventListener('submit', function (e) { e.preventDefault(); sent.hidden = false; });
   }
+
+  /* ---- 登場の動きを場所ごとに割り当て ---- */
+  (function () {
+    var MAP = {
+      about:      { en: 'wipe',  body: 'fade' },
+      strip:      { list: 'pop' },
+      lesson:     { en: 'fade',  rot: 'rotb', body: 'fade' },
+      wall:       { body: 'fade' },
+      alt:        { en: 'slide', list: 'rise', body: 'fade' },
+      instructor: { en: 'blur',  body: 'fade' },
+      results:    { en: 'fade',  list: 'side', body: 'fade' },
+      voice:      { en: 'wipe',  list: 'blur', body: 'fade' },
+      studio:     { en: 'fade',  list: 'mask', body: 'fade' },
+      flow:       { en: 'slide', list: 'side', body: 'fade' },
+      recruit:    { en: 'none',  body: 'fade' },
+      contact:    { en: 'fade',  list: 'rise', body: 'fade' },
+      quiet:      { en: 'none',  body: 'fade' }
+    };
+    var LIST = ['sc', 'tk', 'st', 'vc', 'sd', 'fl', 'ci'];
+    var els = document.querySelectorAll('[data-reveal]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], sec = el.closest('section');
+      var key = sec ? (sec.id || '') : '';
+      if (!MAP[key] && sec) { for (var k in MAP) { if (sec.classList.contains(k)) { key = k; break; } } }
+      if (!MAP[key]) key = sec && sec.querySelector('.vc') ? 'voice' : 'quiet';
+      var m = MAP[key], kind = 'body';
+      if (el.classList.contains('en')) kind = 'en';
+      else if (el.classList.contains('jp-h')) kind = 'h2';
+      else if (el.getAttribute('data-reveal') === 'rot' && m.rot) kind = 'rot';
+      else if (el.tagName === 'LI' || LIST.some(function (c) { return el.classList.contains(c); })) kind = 'list';
+      var fx = kind === 'h2' ? 'fade' : (m[kind] || m.body || 'fade');
+      el.setAttribute('data-fx', fx);
+      if (kind === 'h2' && !el.style.getPropertyValue('--dl')) el.style.setProperty('--dl', '.1s');
+      if (kind === 'list' && !el.style.getPropertyValue('--dl')) {
+        var sib = Array.prototype.filter.call(el.parentNode.children, function (c) { return c.hasAttribute('data-reveal'); });
+        el.style.setProperty('--dl', Math.min(sib.indexOf(el) * 0.08, 0.48).toFixed(2) + 's');
+      }
+    }
+  })();
 
   observe();
 })();
