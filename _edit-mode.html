@@ -1,0 +1,181 @@
+<!-- ===== 修正モード（URLの最後に ?edit を付けたときだけ動く） ===== -->
+<style>
+.ed-bar{position:fixed;left:12px;bottom:12px;z-index:2147483000;display:flex;flex-wrap:wrap;align-items:center;gap:6px;max-width:calc(100vw - 24px);background:#16181D;color:#fff;border-radius:14px;padding:8px 10px;font:600 13px/1.4 "Hiragino Sans","Noto Sans JP",sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.ed-bar b{font-size:12px;letter-spacing:.06em;margin-right:4px}
+.ed-bar button{font:inherit;font-size:12px;border:0;border-radius:999px;padding:7px 12px;background:#2C3038;color:#fff;cursor:pointer;min-height:34px}
+.ed-bar button.on{background:#FFD84D;color:#16181D}
+.ed-bar button.main{background:#fff;color:#16181D}
+.ed-hl{outline:2px dashed #FFB800!important;outline-offset:3px!important;cursor:crosshair!important}
+.ed-sel{outline:3px solid #FFB800!important;outline-offset:3px!important}
+.ed-pin{position:absolute;z-index:2147482990;width:26px;height:26px;border-radius:50%;background:#FFB800;color:#16181D;font:800 13px/26px sans-serif;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.35);pointer-events:auto;cursor:pointer;transform:translate(-40%,-40%)}
+.ed-pop{position:fixed;z-index:2147483001;left:50%;bottom:76px;transform:translateX(-50%);width:min(420px,calc(100vw - 24px));background:#fff;color:#16181D;border-radius:14px;padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.35);font:500 13px/1.6 "Hiragino Sans","Noto Sans JP",sans-serif}
+.ed-pop .ed-where{font-size:11px;color:#6B6F78;margin:0 0 6px;word-break:break-all}
+.ed-pop textarea{width:100%;box-sizing:border-box;min-height:84px;border:1.5px solid #D8D6D0;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;resize:vertical}
+.ed-pop .ed-row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.ed-pop button{font:inherit;font-weight:700;border:0;border-radius:999px;padding:8px 14px;cursor:pointer;min-height:36px}
+.ed-pop .ok{background:#16181D;color:#fff}.ed-pop .ng{background:#EEECE6;color:#16181D}.ed-pop .del{background:none;color:#C0392B;margin-right:auto;padding-left:0}
+.ed-list{position:fixed;z-index:2147483001;left:12px;bottom:70px;width:min(420px,calc(100vw - 24px));max-height:55vh;overflow:auto;background:#fff;color:#16181D;border-radius:14px;padding:12px 14px;box-shadow:0 16px 40px rgba(0,0,0,.35);font:500 13px/1.6 "Hiragino Sans","Noto Sans JP",sans-serif}
+.ed-list h4{margin:0 0 8px;font-size:13px}
+.ed-list ol{margin:0;padding-left:20px}
+.ed-list li{margin:0 0 8px}
+.ed-list small{display:block;color:#6B6F78;font-size:11px}
+.ed-list .empty{color:#6B6F78;margin:0}
+.ed-toast{position:fixed;z-index:2147483002;left:50%;top:16px;transform:translateX(-50%);background:#16181D;color:#fff;border-radius:999px;padding:8px 16px;font:600 13px sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.ed-help{position:fixed;z-index:2147483001;left:50%;top:16px;transform:translateX(-50%);width:min(440px,calc(100vw - 24px));background:#FFF7D6;color:#16181D;border:1.5px solid #FFB800;border-radius:12px;padding:10px 14px;font:500 13px/1.7 "Hiragino Sans","Noto Sans JP",sans-serif;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+.ed-help button{float:right;border:0;background:none;font-size:16px;cursor:pointer;line-height:1}
+</style>
+<script>
+(function () {
+  'use strict';
+  var q = location.search + location.hash;
+  if (!/[?&#]edit\b/.test(q)) return;
+
+  var KEY = 'ed-notes:' + location.pathname;
+  var PAGE = document.title.split('｜')[0] || 'サイト';
+  var notes = [];
+  try { notes = JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { notes = []; }
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(notes)); } catch (e) {} }
+
+  /* オープニングの演出は修正モードでは出さない */
+  var cd = document.getElementById('cd'); if (cd) cd.remove();
+  document.documentElement.classList.add('no-intro');
+
+  /* ---------- 道具 ---------- */
+  function el(tag, cls, html) { var x = document.createElement(tag); if (cls) x.className = cls; if (html != null) x.innerHTML = html; return x; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function toast(t) { var x = el('div', 'ed-toast', esc(t)); document.body.appendChild(x); setTimeout(function () { x.remove(); }, 1800); }
+  function isUI(n) { return n && n.closest && n.closest('.ed-bar,.ed-pop,.ed-list,.ed-pin,.ed-help,.ed-toast'); }
+  var PICK = 'h1,h2,h3,h4,p,li,a,button,figure,img,label,input,textarea,select,td,th,.k,.cw,.fee,.tk,.sc,.ci,.sd,.fl,.vc,.ph,.trial,.slash,.badge,small';
+  function pick(t) { var n = t.closest(PICK); return (n && n !== document.body) ? n : t; }
+  function path(n) {
+    var p = [];
+    while (n && n !== document.body) { var i = 1, s = n; while ((s = s.previousElementSibling)) i++; p.unshift(n.tagName.toLowerCase() + ':nth-child(' + i + ')'); n = n.parentElement; }
+    return 'body>' + p.join('>');
+  }
+  function find(p) { try { return document.querySelector(p); } catch (e) { return null; } }
+  function where(n) {
+    var area = 'ページ';
+    if (n.closest('header')) area = 'ヘッダー';
+    else if (n.closest('footer')) area = 'フッター';
+    else {
+      var sec = n.closest('section');
+      if (sec) {
+        if (sec.classList.contains('hero')) area = 'ヒーロー（一番上）';
+        else {
+          var id = sec.getAttribute('aria-labelledby'), h = id && document.getElementById(id);
+          var lb = sec.getAttribute('aria-label');
+          area = (h ? h.textContent : lb || sec.id || 'セクション').replace(/\s+/g, ' ').trim().slice(0, 24);
+        }
+      }
+    }
+    var txt = (n.getAttribute('aria-label') || n.alt || n.textContent || '').replace(/\s+/g, ' ').trim();
+    var kind = { IMG: '画像', BUTTON: 'ボタン', A: 'リンク', FIGURE: '画像', INPUT: '入力欄', TEXTAREA: '入力欄', SELECT: '選択欄' }[n.tagName] || (n.classList.contains('ph') ? '写真' : '');
+    return { area: area, text: txt.slice(0, 40) + (txt.length > 40 ? '…' : ''), kind: kind };
+  }
+
+  /* ---------- 画面 ---------- */
+  var picking = true, hl = null, sel = null, pop = null, list = null, pins = [];
+  var bar = el('div', 'ed-bar');
+  bar.innerHTML = '<b>修正モード</b><button type="button" data-a="pick" class="on">場所を選ぶ：ON</button><button type="button" data-a="list">一覧（<span>0</span>）</button><button type="button" data-a="copy" class="main">修正リストをコピー</button><button type="button" data-a="help">？</button>';
+  document.body.appendChild(bar);
+  function count() { bar.querySelector('span').textContent = notes.length; }
+
+  function help() {
+    var h = el('div', 'ed-help', '<button type="button" aria-label="閉じる">×</button><b>使い方</b><br>① 直したい場所を押す → どう直したいか書いて「保存」<br>② 番号の丸を押すと書き直し・削除ができる<br>③ 全部書けたら「修正リストをコピー」→ LINEやClaudeに貼り付け<br>タブやメニューを普通に操作したいときは「場所を選ぶ」をOFFに。');
+    h.querySelector('button').onclick = function () { h.remove(); };
+    document.body.appendChild(h);
+  }
+
+  function drawPins() {
+    pins.forEach(function (p) { p.remove(); }); pins = [];
+    notes.forEach(function (nt, i) {
+      var t = find(nt.path); if (!t) return;
+      var r = t.getBoundingClientRect(); if (!r.width && !r.height) return;
+      var p = el('div', 'ed-pin', String(i + 1));
+      p.style.left = (r.left + scrollX) + 'px'; p.style.top = (r.top + scrollY) + 'px';
+      p.onclick = function (e) { e.stopPropagation(); openPop(t, i); };
+      document.body.appendChild(p); pins.push(p);
+    });
+    count();
+  }
+  var raf = 0; function later() { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawPins); }
+  addEventListener('resize', later);
+  setInterval(later, 1500); /* 動きで位置がずれても追いかける */
+
+  function closePop() { if (pop) pop.remove(); pop = null; if (sel) sel.classList.remove('ed-sel'); sel = null; }
+  function openPop(target, idx) {
+    closePop(); if (list) { list.remove(); list = null; }
+    sel = target; sel.classList.add('ed-sel');
+    var w = idx != null ? notes[idx] : where(target);
+    pop = el('div', 'ed-pop');
+    pop.innerHTML = '<p class="ed-where">場所：' + esc(w.area) + (w.kind ? '／' + esc(w.kind) : '') + (w.text ? '「' + esc(w.text) + '」' : '') + '</p>' +
+      '<textarea placeholder="どう直したい？　例：もっと大きく／「〇〇」に変える／色を赤に／消す"></textarea>' +
+      '<div class="ed-row">' + (idx != null ? '<button type="button" class="del">削除</button>' : '') + '<button type="button" class="ng">やめる</button><button type="button" class="ok">保存</button></div>';
+    document.body.appendChild(pop);
+    var ta = pop.querySelector('textarea'); ta.value = idx != null ? notes[idx].comment : ''; ta.focus();
+    pop.querySelector('.ng').onclick = closePop;
+    var d = pop.querySelector('.del'); if (d) d.onclick = function () { notes.splice(idx, 1); persist(); closePop(); drawPins(); toast('削除しました'); };
+    pop.querySelector('.ok').onclick = function () {
+      var c = ta.value.trim(); if (!c) { ta.focus(); return; }
+      if (idx != null) notes[idx].comment = c;
+      else notes.push({ path: path(target), area: w.area, kind: w.kind, text: w.text, comment: c });
+      persist(); closePop(); drawPins(); toast('保存しました（' + notes.length + '件）');
+    };
+  }
+
+  function showList() {
+    if (list) { list.remove(); list = null; return; }
+    closePop();
+    list = el('div', 'ed-list');
+    list.innerHTML = '<h4>修正リスト（' + notes.length + '件）</h4>' + (notes.length ? '<ol>' + notes.map(function (n, i) {
+      return '<li><small>' + esc(n.area) + (n.kind ? '／' + esc(n.kind) : '') + (n.text ? '「' + esc(n.text) + '」' : '') + '</small>' + esc(n.comment) + ' <a href="#" data-go="' + i + '">場所へ</a></li>';
+    }).join('') + '</ol><p style="margin:8px 0 0;text-align:right"><a href="#" data-clear="1" style="color:#C0392B;font-size:12px">すべて消す</a></p>' : '<p class="empty">まだありません。直したい場所を押してください。</p>');
+    list.addEventListener('click', function (e) {
+      var a = e.target.closest('a'); if (!a) return; e.preventDefault();
+      if (a.dataset.go != null) { var t = find(notes[+a.dataset.go].path); if (t) { t.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(later, 600); } list.remove(); list = null; }
+      if (a.dataset.clear) { notes = []; persist(); drawPins(); list.remove(); list = null; toast('すべて消しました'); }
+    });
+    document.body.appendChild(list);
+  }
+
+  function copy() {
+    if (!notes.length) { toast('まだ修正がありません'); return; }
+    var txt = '【' + PAGE + ' 修正リスト】\n' + location.origin + location.pathname + '\n\n' + notes.map(function (n, i) {
+      return (i + 1) + '. ［' + n.area + (n.kind ? '／' + n.kind : '') + '］' + (n.text ? '「' + n.text + '」' : '') + '\n   → ' + n.comment;
+    }).join('\n');
+    function fallback() {
+      var ta = el('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('コピーしました。LINEやClaudeに貼り付けてください'); } catch (e) { toast('コピーできませんでした'); }
+      ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function () { toast('コピーしました。LINEやClaudeに貼り付けてください'); }, fallback);
+    else fallback();
+  }
+
+  bar.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var a = b.dataset.a;
+    if (a === 'pick') { picking = !picking; b.classList.toggle('on', picking); b.textContent = '場所を選ぶ：' + (picking ? 'ON' : 'OFF'); if (hl) hl.classList.remove('ed-hl'); }
+    else if (a === 'list') showList();
+    else if (a === 'copy') copy();
+    else if (a === 'help') help();
+  });
+
+  /* ---------- 選ぶ ---------- */
+  document.addEventListener('mouseover', function (e) {
+    if (!picking || isUI(e.target) || pop) return;
+    var n = pick(e.target); if (hl && hl !== n) hl.classList.remove('ed-hl'); hl = n; hl.classList.add('ed-hl');
+  }, true);
+  document.addEventListener('mouseout', function (e) { if (hl && !isUI(e.target)) hl.classList.remove('ed-hl'); }, true);
+  document.addEventListener('click', function (e) {
+    if (!picking || isUI(e.target)) return;
+    e.preventDefault(); e.stopPropagation();
+    if (hl) hl.classList.remove('ed-hl');
+    openPop(pick(e.target), null);
+  }, true);
+  document.addEventListener('submit', function (e) { if (picking) e.preventDefault(); }, true);
+
+  drawPins();
+  if (!notes.length) help();
+})();
+</script>
