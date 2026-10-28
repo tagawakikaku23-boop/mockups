@@ -568,3 +568,11 @@ main{overflow-x:clip}
 .sem-hist b{font-family:var(--min);color:var(--navy)}
 .sem-hist p{font-size:14px;margin:6px 0 0}
 @media(max-width:767px){.lect,.sem-hist{grid-template-columns:1fr}.pull{font-size:18px}.post-cta .btn{flex:1 1 100%}}
+
+.sec-more{text-align:center;margin-top:48px}
+.s-mini a{display:block;color:inherit;height:100%}
+.s-mini figure{aspect-ratio:16/9}
+.s-mini .s-body{padding:18px 22px 22px}
+.s-mini .s-body h3{font-size:17px;margin:4px 0 0;padding:0;border:0}
+.co-top .co-tbl{max-width:760px;margin:0 auto}
+.strength .sec-more .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
