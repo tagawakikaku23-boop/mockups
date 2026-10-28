@@ -1,0 +1,30 @@
+
+.em-btn{position:fixed;left:16px;bottom:16px;z-index:9000;display:inline-flex;align-items:center;gap:6px;background:#fff;color:#1E3A64;border:1px solid #1E3A64;border-radius:999px;padding:9px 16px;font:500 13px/1 'Noto Sans JP',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.em-btn:hover{background:#1E3A64;color:#fff}
+.em-bar{position:fixed;left:16px;bottom:16px;z-index:9001;display:none;gap:8px;align-items:center;flex-wrap:wrap;background:#1E3A64;color:#fff;border-radius:14px;padding:10px 12px;font:13px/1.4 'Noto Sans JP',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:calc(100vw - 32px)}
+.em-bar b{font-weight:500;margin-right:4px}
+.em-bar button{background:#fff;color:#1E3A64;border:0;border-radius:999px;padding:7px 14px;font:500 12.5px/1 'Noto Sans JP',sans-serif;cursor:pointer;min-height:32px}
+.em-bar button.em-end{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6)}
+body.em-on .em-btn{display:none}
+body.em-on .em-bar{display:flex}
+body.em-on main *:hover,body.em-on .hd *:hover,body.em-on .ft *:hover{outline:2px dashed #C9A13B;outline-offset:2px;cursor:crosshair}
+body.em-on .pagetop,body.em-on .sp-tel{display:none}
+.em-pin{position:absolute;z-index:8999;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:#A4494A;color:#fff;font:700 12px/26px 'Noto Sans JP',sans-serif;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none;display:none}
+body.em-on .em-pin{display:block}
+.em-pop{position:fixed;z-index:9002;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100vw - 32px));background:#fff;border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);display:none;font:14px/1.6 'Noto Sans JP',sans-serif;color:#333}
+.em-pop.show{display:block}
+.em-pop .t{font-size:12px;color:#6B7280;margin-bottom:8px;word-break:break-all}
+.em-pop textarea{width:100%;height:110px;border:1px solid #DDE2E8;border-radius:8px;padding:10px;font:inherit;font-size:16px;resize:vertical}
+.em-pop .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.em-pop button{border-radius:999px;padding:9px 18px;font:500 13px/1 'Noto Sans JP',sans-serif;cursor:pointer;border:1px solid #1E3A64;background:#fff;color:#1E3A64}
+.em-pop button.ok{background:#1E3A64;color:#fff}
+.em-list{position:fixed;z-index:9002;left:16px;bottom:76px;width:min(420px,calc(100vw - 32px));max-height:55vh;overflow:auto;background:#fff;border-radius:14px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.22);display:none;font:13px/1.6 'Noto Sans JP',sans-serif;color:#333}
+.em-list.show{display:block}
+.em-list h4{font-size:14px;color:#1E3A64;margin:0 0 8px}
+.em-list ol{margin:0;padding-left:1.4em}
+.em-list li{padding:6px 0;border-bottom:1px solid #eee}
+.em-list li small{display:block;color:#6B7280;font-size:11.5px}
+.em-list li button{float:right;border:0;background:none;color:#A4494A;cursor:pointer;font-size:12px}
+.em-list .empty{color:#6B7280}
+.em-toast{position:fixed;z-index:9003;left:50%;bottom:90px;transform:translateX(-50%);background:#333;color:#fff;border-radius:999px;padding:8px 18px;font:13px/1.4 'Noto Sans JP',sans-serif;display:none}
+@media(max-width:767px){.em-btn,.em-bar{bottom:70px;left:10px}.em-list{bottom:128px;left:10px}}
